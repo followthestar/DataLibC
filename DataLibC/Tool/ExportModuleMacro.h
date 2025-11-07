@@ -6,18 +6,19 @@
 #define TEST_EXPORTMODULEMACRO_H
 
 #ifdef __cplusplus
-#define EXTERN_C extern "C"
+#define LIB_EXTERN_C extern "C"
 #else
-#define EXTERN_C_
+#define LIB_EXTERN_C
 #endif
 
 
 #ifdef EXPORT_MODULE
-#define LIB_C_API EXTERN_C_ __declspec(dllexport)
+#define LIB_C_API LIB_EXTERN_C __declspec(dllexport)
 #else
-#define LIB_C_API EXTERN_C_ __declspec(dllimport)
+#define LIB_C_API LIB_EXTERN_C __declspec(dllimport)
 #endif
 
+#define API_MODULE LIB_C_API
 
 #define LIB_STRUCT
 #define LIB_INTERFACE struct
@@ -26,8 +27,6 @@
 #define ABSTRACT
 #define DETAIL
 #define INTERNAL
-
-#define API_MODULE LIB_C_API
 
 
 #define PRIVATE

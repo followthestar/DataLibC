@@ -39,15 +39,15 @@ if (exCode == 0)
 
 #define __BuildException(code, message) (ExceptionData){code, message}
 
-API_MODULE const int __BuiltinException_BaseException;
-API_MODULE const int __BuiltinException_RuntimeException;
-API_MODULE const int __BuiltinException_IOException;
-API_MODULE const int __BuiltinException_InvalidOperationException;
-API_MODULE const int __BuiltinException_IndexOutOfRangeException;
-API_MODULE const int __BuiltinException_NullPointerException;
-API_MODULE const int __BuiltinException_TypeCastException;
-API_MODULE const int __BuiltinException_ArithmeticException;
-API_MODULE const int __BuiltinException_ArgumentException;
+API_MODULE extern const int __BuiltinException_BaseException;
+API_MODULE extern const int __BuiltinException_RuntimeException;
+API_MODULE extern const int __BuiltinException_IOException;
+API_MODULE extern const int __BuiltinException_InvalidOperationException;
+API_MODULE extern const int __BuiltinException_IndexOutOfRangeException;
+API_MODULE extern const int __BuiltinException_NullPointerException;
+API_MODULE extern const int __BuiltinException_TypeCastException;
+API_MODULE extern const int __BuiltinException_ArithmeticException;
+API_MODULE extern const int __BuiltinException_ArgumentException;
 
 #define Exception __BuiltinException_BaseException
 

@@ -60,29 +60,26 @@ typedef enum _VTypeFlag
 
 #pragma endregion
 
-#define V_TYPE_BASE_SHIFT (0)
-
-// All the builtin types must have a unique value which is multiple of 1
-#define V_MAKE_BUILTIN_TYPE(seq) ((VType)((seq) << V_TYPE_BASE_SHIFT))
+#define __V_MAKE_BUILTIN_TYPE(seq) (seq)
 
 #pragma region Builtin VType
-#define V_TYPE_INVALID                  V_MAKE_BUILTIN_TYPE(0)
-#define V_TYPE_NULL                     V_MAKE_BUILTIN_TYPE(1)
-#define V_TYPE_CHAR                     V_MAKE_BUILTIN_TYPE(2)
-#define V_TYPE_UCHAR                    V_MAKE_BUILTIN_TYPE(3)
-#define V_TYPE_SHORT                    V_MAKE_BUILTIN_TYPE(4)
-#define V_TYPE_USHORT                   V_MAKE_BUILTIN_TYPE(5)
-#define V_TYPE_INT                      V_MAKE_BUILTIN_TYPE(6)
-#define V_TYPE_UINT                     V_MAKE_BUILTIN_TYPE(7)
-#define V_TYPE_LLONG                    V_MAKE_BUILTIN_TYPE(8)
-#define V_TYPE_ULLONG                   V_MAKE_BUILTIN_TYPE(9)
-#define V_TYPE_FLOAT                    V_MAKE_BUILTIN_TYPE(10)
-#define V_TYPE_DOUBLE                   V_MAKE_BUILTIN_TYPE(11)
-#define V_TYPE_LDOUBLE                  V_MAKE_BUILTIN_TYPE(12)
-#define V_TYPE_BOOL                     V_MAKE_BUILTIN_TYPE(13)
-#define V_TYPE_POINTER                  V_MAKE_BUILTIN_TYPE(14)
-#define V_TYPE_STRING                   V_MAKE_BUILTIN_TYPE(15)
-#define V_TYPE_OBJECT                   V_MAKE_BUILTIN_TYPE(16)
+#define V_TYPE_INVALID                  __V_MAKE_BUILTIN_TYPE(0)
+#define V_TYPE_NULL                     __V_MAKE_BUILTIN_TYPE(1)
+#define V_TYPE_CHAR                     __V_MAKE_BUILTIN_TYPE(2)
+#define V_TYPE_UCHAR                    __V_MAKE_BUILTIN_TYPE(3)
+#define V_TYPE_SHORT                    __V_MAKE_BUILTIN_TYPE(4)
+#define V_TYPE_USHORT                   __V_MAKE_BUILTIN_TYPE(5)
+#define V_TYPE_INT                      __V_MAKE_BUILTIN_TYPE(6)
+#define V_TYPE_UINT                     __V_MAKE_BUILTIN_TYPE(7)
+#define V_TYPE_LLONG                    __V_MAKE_BUILTIN_TYPE(8)
+#define V_TYPE_ULLONG                   __V_MAKE_BUILTIN_TYPE(9)
+#define V_TYPE_FLOAT                    __V_MAKE_BUILTIN_TYPE(10)
+#define V_TYPE_DOUBLE                   __V_MAKE_BUILTIN_TYPE(11)
+#define V_TYPE_LDOUBLE                  __V_MAKE_BUILTIN_TYPE(12)
+#define V_TYPE_BOOL                     __V_MAKE_BUILTIN_TYPE(13)
+#define V_TYPE_POINTER                  __V_MAKE_BUILTIN_TYPE(14)
+#define V_TYPE_STRING                   __V_MAKE_BUILTIN_TYPE(15)
+#define V_TYPE_OBJECT                   __V_MAKE_BUILTIN_TYPE(16)
 #pragma endregion
 
 #define V_GET_TYPE(type)    type##_get_type()
@@ -249,16 +246,20 @@ constexpr _VTypeMemberFieldInfo newType##_fields = {                \
 
 #define __FIELD_INFO_NO_TYPE_PROVIDE(vtype, member)         \
 {                                                           \
+.isStatic = false,                                          \
 .fieldName = __GET_MEMBER_NAME(member),                     \
+.size = sizeof(((vtype*)nullptr)->member),                  \
 .offset = __GET_MEMBER_OFFSET(vtype, member),               \
 .type = __GET_MEMBER_TYPE(vtype, member)                    \
 }
 
-#define __FIELD_INFO_WITH_TYPE_PROVIDE(vtype, memberType, member)\
-{                                                               \
-    .fieldName = __GET_MEMBER_NAME(member),                     \
-    .offset = __GET_MEMBER_OFFSET(vtype, member),               \
-    .type = __GET_MEMBER_TYPE(vtype, member)                    \
+#define __FIELD_INFO_WITH_TYPE_PROVIDE(vtype, memberType, member)   \
+{                                                                   \
+    .isStatic = false,                                              \
+    .fieldName = __GET_MEMBER_NAME(member),                         \
+    .size = sizeof(((vtype*)nullptr)->member),                      \
+    .offset = __GET_MEMBER_OFFSET(vtype, member),                   \
+    .type = __GET_MEMBER_TYPE(vtype, member)                        \
 }
 
 #define __GEN_CTOR_FIELD_INFO(type, ...)                          \
@@ -303,7 +304,9 @@ API_MODULE vpointer GetParentClass(const VClass* klass);
 
 typedef struct _VFieldInfo
 {
+    bool isStatic;
     const char fieldName[64];
+    int size;
     int offset;
     VType type;
 } VFieldInfo;
