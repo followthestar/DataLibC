@@ -1,0 +1,8 @@
+//
+// Created by 18030 on 2025/2/14.
+//
+
+#ifndef DATALIBC_ISERIALIZABLE_H
+#define DATALIBC_ISERIALIZABLE_H
+
+#endif //DATALIBC_ISERIALIZABLE_H
