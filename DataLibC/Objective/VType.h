@@ -93,11 +93,13 @@ typedef enum _VTypeFlag
 #define __VTYPE_INIT_FUNC(newType) newType##_init
 #define __VTYPE_CLASS_INIT_FUNC(newType) newType##_class_init
 
+#define __DECLARE_V_GET_TYPE(newType) VType newType##_get_type();
+#define __DEFINE_V_GET_TYPE(newType)  VType newType##_get_type()
+
+
 #define DEFINE_VTYPE_INIT(newType) void newType##_init(newType* self)
 #define DEFINE_VTYPE_CLASS_INIT(newType) void newType##_class_init()
 
-#define __DECLARE_V_GET_TYPE(newType) VType newType##_get_type();
-#define __DEFINE_V_GET_TYPE(newType)  VType newType##_get_type()
 
 /**
  * @brief Declare a new type with a method to get its type and generate a type class
@@ -138,6 +140,7 @@ void vType##_set_##fieldName(vType* instance, propertyType value)
 #define DEFAULT_DESTRUCTOR nullptr
 #pragma endregion
 
+#pragma region Internal
 #define __VTYPE_CLASS_INSTANCE(type) type##_class_instance
 
 #define __REGISTER_VTYPE_META(newType, constructor)             \
@@ -173,14 +176,6 @@ VType newType##_get_type()                              \
 DEFINE_VTYPE_INIT(newType){}\
 DEFINE_VTYPE_CLASS_INIT(newType){}
 
-#define DEFINE_VTYPE_SIMPLE(newType, fields, methods)    \
-    DEFINE_VTYPE(newType, VObject, DECLARE_FIELDS(fields), DECLARE_METHODS(methods))
-
-#define DEFINE_FINAL_VTYPE_SIMPLE(newType) DEFINE_FINAL_VTYPE_SIMPLE(newType, VObject)
-
-#define DEFINE_FINAL_VTYPE(newType, parentType)
-
-#define DECLARE_MEMBER(type, name) type, name
 
 #define __DEFINE_MEMBER(type, name) type name;
 
@@ -192,9 +187,23 @@ __GEN_VTYPE_PROPERTY(newType, __VA_ARGS__)
 
 #define __GEN_FIELD_INFO(type, ...)                          \
     EXPAND_ARGS2_FIXED(__FIELD_INFO_WITH_TYPE_PROVIDE, type, __VA_ARGS__)
+#pragma endregion
 
 #define DECLARE_FIELDS(...) __VA_ARGS__
 #define DECLARE_METHODS(...) __VA_ARGS__
+#define MEMBER_FIELD(type, name) type, name
+#define MEMBER_METHOD(retType, name, params)
+#define METHOD_PARAMS(...) __VA_ARGS__
+#define PARAM_PAIR(type, name)
+
+#pragma region API Define Type
+#define DEFINE_VTYPE_SIMPLE(newType, fields, methods)    \
+DEFINE_VTYPE(newType, VObject, DECLARE_FIELDS(fields), DECLARE_METHODS(methods))
+
+#define DEFINE_FINAL_VTYPE_SIMPLE(newType) DEFINE_FINAL_VTYPE_SIMPLE(newType, VObject)
+
+#define DEFINE_FINAL_VTYPE(newType, parentType)
+
 /**
  * @brief Define a new type with super type and members
  * @param newType A new type name
@@ -214,6 +223,9 @@ constexpr _VTypeMemberFieldInfo newType##_fields = {                \
         __GEN_FIELD_INFO(newType, fields)                           \
     }                                                               \
 };
+
+#pragma endregion
+
 
 #pragma region Type Generic
 #define __V_GET_TYPE_FROM_ARG(arg) _Generic((arg),          \
@@ -276,6 +288,7 @@ static const struct _VTypeConstructorInfo type##_ctor_info = {  \
 
 #define __GET_TYPE_CONSTRUCTOR_INFO(type) type##_ctor_info
 
+#pragma region API - Register Type
 /**
  * @brief Register a new type into the type system
  * @param newType A new type name
@@ -293,6 +306,7 @@ static const struct _VTypeConstructorInfo type##_ctor_info = {  \
 #define REGISTER_VTYPE(newType, parentType, constructor, destructor)        \
 __REGISTER_VTYPE_META(newType, DEFINE_CONSTRUCTOR(constructor))             \
 __DEFINE_VTYPE_REGISTER(newType, parentType, destructor)
+#pragma endregion
 
 
 API_MODULE VType
