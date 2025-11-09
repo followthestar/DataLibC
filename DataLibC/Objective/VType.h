@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <memory.h>
 #include "DataLibC/Tool/TypeMacro.h"
 #include "DataLibC/Tool/Magic.h"
 
@@ -64,7 +65,7 @@ typedef enum _VTypeFlag
 
 #pragma region Builtin VType
 #define V_TYPE_INVALID                  __V_MAKE_BUILTIN_TYPE(0)
-#define V_TYPE_NULL                     __V_MAKE_BUILTIN_TYPE(1)
+#define V_TYPE_VOID                     __V_MAKE_BUILTIN_TYPE(1)
 #define V_TYPE_CHAR                     __V_MAKE_BUILTIN_TYPE(2)
 #define V_TYPE_UCHAR                    __V_MAKE_BUILTIN_TYPE(3)
 #define V_TYPE_SHORT                    __V_MAKE_BUILTIN_TYPE(4)
@@ -158,6 +159,7 @@ static VType newType##_get_type_internal()                                  \
          .ctorInfo = &__GET_TYPE_CONSTRUCTOR_INFO(newType),                 \
          .dtor = (VInstanceFinalizeFunc)destructor,                         \
          .memberInfos = &newType##_fields,                                  \
+         .methodInfos = &newType##_methods,                                 \
          .classInit = __VTYPE_CLASS_INIT_FUNC(newType),                     \
          .classFinalize = nullptr,                                          \
          .instanceInit = (VInstanceInitFunc)__VTYPE_INIT_FUNC(newType)      \
@@ -187,14 +189,116 @@ __GEN_VTYPE_PROPERTY(newType, __VA_ARGS__)
 
 #define __GEN_FIELD_INFO(type, ...)                          \
     EXPAND_ARGS2_FIXED(__FIELD_INFO_WITH_TYPE_PROVIDE, type, __VA_ARGS__)
+
+#define __GET_MEMBER_OFFSET(type, member) offsetof(type, member)
+#define __GET_MEMBER_NAME(member) #member
+#define __GET_MEMBER_TYPE(type, member) __V_GET_TYPE_FROM_ARG(((type*)nullptr)->member)
+
+#define __FIELD_INFO_NO_TYPE_PROVIDE(vtype, member)         \
+{                                                           \
+.isStatic = false,                                          \
+.fieldName = __GET_MEMBER_NAME(member),                     \
+.size = sizeof(((vtype*)nullptr)->member),                  \
+.offset = __GET_MEMBER_OFFSET(vtype, member),               \
+.type = __GET_MEMBER_TYPE(vtype, member)                    \
+}
+
+#define __FIELD_INFO_WITH_TYPE_PROVIDE(vtype, memberType, member)   \
+{                                                                   \
+    .isStatic = false,                                              \
+    .fieldName = __GET_MEMBER_NAME(member),                         \
+    .size = sizeof(((vtype*)nullptr)->member),                      \
+    .offset = __GET_MEMBER_OFFSET(vtype, member),                   \
+    .type = __GET_MEMBER_TYPE(vtype, member)                        \
+}
+
+
+#define __GET_PARAM_TYPE(type, name) __V_GET_TYPE_FROM_ARG((type){0})
+
+#define __EXTRACT_TYPE_FROM_PARAM_TUPLE_LIST(param_tuple)  \
+    APPLY_TUPLE_AGAIN(__GET_PARAM_TYPE, param_tuple)
+
+#define __BUILD_METHOD_INFO(name, ptr, ret, ...)                                \
+{                                                                               \
+    .methodName = __GET_MEMBER_NAME(name),                                      \
+    .accessFlag = VAPublic | VAInstance,                                        \
+    .method = ptr,                                                              \
+    .returnType = __V_GET_RET_TYPE_FROM_POINTER((ret*){0}),                     \
+    .paramCount = COUNT_ARG(__VA_ARGS__),                                       \
+    .paramTypes = {                                                             \
+        EXPAND_ARGS(__EXTRACT_TYPE_FROM_PARAM_TUPLE_LIST, __VA_ARGS__)          \
+    }                                                                           \
+}
+
+#define __GEN_CTOR_FIELD_INFO(type, ...)                          \
+    EXPAND_ARGS_FIXED(__FIELD_INFO_NO_TYPE_PROVIDE, type, __VA_ARGS__)
+
+
+#define __GEN_CONSTRUCTOR_INFO(type, ...)                       \
+static const struct _VTypeConstructorInfo type##_ctor_info = {  \
+           .paramCount = COUNT_ARG(__VA_ARGS__),                \
+           .paramInfos = {                                      \
+               __GEN_CTOR_FIELD_INFO(type, ##__VA_ARGS__)       \
+           }                                                    \
+};
+
+#define __GET_TYPE_CONSTRUCTOR_INFO(type) type##_ctor_info
+
+#define __GEN_METHOD_INFO_STEP1(ret, name, param_list, vtype)  \
+    __BUILD_METHOD_INFO(name, __AUTO_GEN_METHOD(vtype, name), ret, STRIP(param_list))
+
+#define __GEN_METHOD_INFO_HELPER(vtype, method_tuple)  \
+    APPLY_TUPLE_EXT(__GEN_METHOD_INFO_STEP1, method_tuple, vtype)
+
+// Each param is a tuple of (ret, name, param_list)
+#define __GEN_METHOD_INFO(vtype, ...)  \
+    EXPAND_ARGS_FIXED(__GEN_METHOD_INFO_HELPER, vtype, __VA_ARGS__)
+
+#define __STRIP_PARAM_IMPL(type, name) type name
+#define __STRIP_PARAM_HELPER(param_pair) __STRIP_PARAM_IMPL param_pair
+
+
+#define __AUTO_GEN_METHOD(vtype, name) __auto_generate_##vtype##_##name
+
+#define __GEN_METHOD_CALL_WITH_NO_RETURN(vtype, name, object, args_in, ...) \
+    vtype##_##name(object __VA_OPT__(,) UNPACK_PARAMS(args_in, __VA_ARGS__))
+
+#define __GEN_METHOD_CALL_NORMAL(vtype, ret, name, object, args_in, out, ...)         nullptr
+// auto value = vtype##_##name(object __VA_OPT__(,) UNPACK_PARAMS(args_in, __VA_ARGS__));          \
+// memcpy_s(out, sizeof(ret), &value, sizeof(ret));
+
+#define __GEN_METHOD_CALL_THROUGH_RET_TYPE(vtype, ret, name, object, args_in, out, ...)                         \
+    _Generic((ret*){0},                                                                                         \
+        void*: __GEN_METHOD_CALL_WITH_NO_RETURN(vtype, name, object, args_in __VA_OPT__(, __VA_ARGS__)),       \
+        default: __GEN_METHOD_CALL_NORMAL(vtype, ret, name, object, args_in, out __VA_OPT__(, __VA_ARGS__))     \
+    );
+
+#define __FOREACH_DECLARE_METHOD_STEP2(vtype, ret, name, ...)   \
+    ret vtype##_##name(vtype* self __VA_OPT__(,) EXPAND_ARGS(__STRIP_PARAM_HELPER, __VA_ARGS__));               \
+    static void __AUTO_GEN_METHOD(vtype, name)(void* object, void** args, void* out)                            \
+    {                                                                                                           \
+         constexpr int argCount = COUNT_ARG(__VA_ARGS__);                                                       \
+         __GEN_METHOD_CALL_THROUGH_RET_TYPE(vtype, ret, name, object, args, out __VA_OPT__(, __VA_ARGS__))        \
+    }
+
+#define __FOREACH_DECLARE_METHOD_STEP1(ret, name, param_tuple, vtype)  \
+__FOREACH_DECLARE_METHOD_STEP2(vtype, ret, name, STRIP(param_tuple))
+
+#define __FOREACH_DECLARE_METHOD(vtype, method_signature_tuple) \
+    APPLY_TUPLE_EXT(__FOREACH_DECLARE_METHOD_STEP1, method_signature_tuple, vtype)
+
+#define __GEN_METHOD_DECLARATION(vtype, ...)    \
+    EXPAND_ARGS_FIXED_NO_COMMA(__FOREACH_DECLARE_METHOD, vtype, __VA_ARGS__)
+
+
 #pragma endregion
 
 #define DECLARE_FIELDS(...) __VA_ARGS__
 #define DECLARE_METHODS(...) __VA_ARGS__
 #define MEMBER_FIELD(type, name) type, name
-#define MEMBER_METHOD(retType, name, params)
-#define METHOD_PARAMS(...) __VA_ARGS__
-#define PARAM_PAIR(type, name)
+#define MEMBER_METHOD(retType, name, params) (retType, name, params)
+#define METHOD_PARAMS(...) (__VA_ARGS__)
+#define PARAM_PAIR(type, name) (type, name)
 
 #pragma region API Define Type
 #define DEFINE_VTYPE_SIMPLE(newType, fields, methods)    \
@@ -217,12 +321,24 @@ typedef struct _##newType{                                          \
     const parentType super;                                         \
     EXPAND_ARGS2(__DEFINE_MEMBER, fields)                           \
 } newType;                                                          \
-constexpr _VTypeMemberFieldInfo newType##_fields = {                \
+static const _VTypeMemberFieldInfo newType##_fields = {             \
     .paramCount = COUNT_ARG2(fields),                               \
     .paramInfos = {                                                 \
         __GEN_FIELD_INFO(newType, fields)                           \
     }                                                               \
+};                                                                  \
+__GEN_METHOD_DECLARATION(newType, methods)                          \
+static const _VTypeMemberMethodInfo newType##_methods = {           \
+    .methodCount = COUNT_ARG(methods),                              \
+    .publicMethodCount =  COUNT_ARG(methods),                       \
+    .privateMethodCount = 0,                                        \
+    .methodInfos = {                                                \
+        __GEN_METHOD_INFO(newType, methods)                         \
+    }                                                               \
 };
+
+#define DEFINE_VTYPE_METHOD(vtype, ret, name, ...) \
+    ret vtype##_##name(vtype* self __VA_OPT__(, __VA_ARGS__))
 
 #pragma endregion
 
@@ -250,43 +366,32 @@ constexpr _VTypeMemberFieldInfo newType##_fields = {                \
     const void*: V_TYPE_POINTER,                            \
     default: V_TYPE_OBJECT                                  \
 )
+
+#define __V_GET_RET_TYPE_FROM_POINTER(arg_ptr) _Generic((arg_ptr),  \
+    int*: V_TYPE_INT,                                               \
+    unsigned int*: V_TYPE_UINT,                                     \
+    float*: V_TYPE_FLOAT,                                           \
+    double*: V_TYPE_DOUBLE,                                         \
+    char*: V_TYPE_CHAR,                                             \
+    unsigned char*: V_TYPE_UCHAR,                                   \
+    short*: V_TYPE_SHORT,                                           \
+    unsigned short*: V_TYPE_USHORT,                                 \
+    long long*: V_TYPE_LLONG,                                       \
+    unsigned long long*: V_TYPE_ULLONG,                             \
+    bool*: V_TYPE_BOOL,                                             \
+    char**: V_TYPE_STRING,                                          \
+    const char**: V_TYPE_STRING,                                    \
+    void*: V_TYPE_VOID,                                             \
+    float**: V_TYPE_POINTER,                                        \
+    int**: V_TYPE_POINTER,                                          \
+    double**: V_TYPE_POINTER,                                       \
+    bool**: V_TYPE_POINTER,                                         \
+    const void**: V_TYPE_POINTER,                                   \
+    default: V_TYPE_OBJECT                                          \
+)
+
 #pragma endregion
 
-#define __GET_MEMBER_OFFSET(type, member) offsetof(type, member)
-#define __GET_MEMBER_NAME(member) #member
-#define __GET_MEMBER_TYPE(type, member) __V_GET_TYPE_FROM_ARG(((type*)nullptr)->member)
-
-#define __FIELD_INFO_NO_TYPE_PROVIDE(vtype, member)         \
-{                                                           \
-.isStatic = false,                                          \
-.fieldName = __GET_MEMBER_NAME(member),                     \
-.size = sizeof(((vtype*)nullptr)->member),                  \
-.offset = __GET_MEMBER_OFFSET(vtype, member),               \
-.type = __GET_MEMBER_TYPE(vtype, member)                    \
-}
-
-#define __FIELD_INFO_WITH_TYPE_PROVIDE(vtype, memberType, member)   \
-{                                                                   \
-    .isStatic = false,                                              \
-    .fieldName = __GET_MEMBER_NAME(member),                         \
-    .size = sizeof(((vtype*)nullptr)->member),                      \
-    .offset = __GET_MEMBER_OFFSET(vtype, member),                   \
-    .type = __GET_MEMBER_TYPE(vtype, member)                        \
-}
-
-#define __GEN_CTOR_FIELD_INFO(type, ...)                          \
-    EXPAND_ARGS_FIXED(__FIELD_INFO_NO_TYPE_PROVIDE, type, __VA_ARGS__)
-
-
-#define __GEN_CONSTRUCTOR_INFO(type, ...)                       \
-static const struct _VTypeConstructorInfo type##_ctor_info = {  \
-           .paramCount = COUNT_ARG(__VA_ARGS__),                \
-           .paramInfos = {                                      \
-               __GEN_CTOR_FIELD_INFO(type, ##__VA_ARGS__)            \
-           }                                                    \
-};
-
-#define __GET_TYPE_CONSTRUCTOR_INFO(type) type##_ctor_info
 
 #pragma region API - Register Type
 /**
@@ -319,7 +424,7 @@ API_MODULE vpointer GetParentClass(const VClass* klass);
 typedef struct _VFieldInfo
 {
     bool isStatic;
-    const char fieldName[64];
+    const char* fieldName;
     int size;
     int offset;
     VType type;
@@ -336,19 +441,20 @@ typedef struct _VTypeConstructorInfo _VTypeMemberFieldInfo;
 typedef enum VAccessFlag
 {
     Default = 0,
-    ENUM_FLAG(Public, 1),
-    ENUM_FLAG(NonPublic, 2),
-    ENUM_FLAG(Static, 3),
-    ENUM_FLAG(Instance, 4)
+    ENUM_FLAG(VAPublic, 1),
+    ENUM_FLAG(VANonPublic, 2),
+    ENUM_FLAG(VAStatic, 3),
+    ENUM_FLAG(VAInstance, 4)
 } VAccessFlag;
 
 typedef struct _VMethodInfo
 {
-    const char methodName[64];
+    const char* methodName;
     VAccessFlag accessFlag;
     void* method;
     VType returnType;
-    VType paramTypes[];
+    int paramCount;
+    VType paramTypes[16];
 } VMethodInfo;
 
 typedef struct _VTypeMethodInfo
@@ -366,6 +472,7 @@ struct _VTypeInfo
     const struct _VTypeConstructorInfo* ctorInfo;
     VInstanceFinalizeFunc dtor;
     const _VTypeMemberFieldInfo* memberInfos;
+    const _VTypeMemberMethodInfo* methodInfos;
     VClassInitFunc classInit;
     VClassFinalizeFunc classFinalize;
     VInstanceInitFunc instanceInit;

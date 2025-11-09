@@ -25,6 +25,17 @@ for (auto collection##iter = GetIterator(&collection); HasNext(collection##iter)
 #define __SELECT2(_1, _1_1, _2, _2_2, _3, _3_3, _4, _4_4, _5, _5_5, _6, _6_6, _7, _7_7, _8, _8_8, _9, _9_9, _10, _1010,\
     _11, _1111, _12, _1212, _13, _1313, _14, _1414, _15, _1515, _16, _1616, T, TT, ...) TT
 
+#define __STRIP_HELPER(...) __VA_ARGS__
+#define STRIP(x) __STRIP_HELPER x
+#define PASS_ARGS(func, ...) func(__VA_ARGS__)
+#define APPLY_TUPLE(func, tuple) PASS_ARGS(func, STRIP(tuple))
+#define APPLY_TUPLE_EXT(func, tuple, ...) PASS_ARGS(func, STRIP(tuple), __VA_ARGS__)
+
+#define PASS_ARGS_AGAIN(func, ...) func(__VA_ARGS__)
+#define APPLY_TUPLE_AGAIN(func, tuple) PASS_ARGS_AGAIN(func, STRIP(tuple))
+#define APPLY_TUPLE_EXT_AGAIN(func, tuple, ...) PASS_ARGS_AGAIN(func, STRIP(tuple), __VA_ARGS__)
+
+
 /**
  * @brief Used to get the number of arguments passed to a macro.
  */
@@ -68,6 +79,46 @@ for (auto collection##iter = GetIterator(&collection); HasNext(collection##iter)
 #define EXPAND_FIXED15(func, fixed, var, ...) func(var), EXPAND_FIXED14(func, fixed, __VA_ARGS__)
 #define EXPAND_FIXED16(func, fixed, var, ...) func(var), EXPAND_FIXED15(func, fixed, __VA_ARGS__)
 
+#define __GET_FIRST(_1, ...) _1
+#define __APPLY_ARG(arg_in, param_tuple) \
+    *((__GET_FIRST param_tuple*)(*(arg_in)))
+
+#define EXPAND_PARAM_PACK0(...)
+#define EXPAND_PARAM_PACK1(args_in, param_tuple) __APPLY_ARG(args_in, param_tuple)
+#define EXPAND_PARAM_PACK2(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK1(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK3(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK2(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK4(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK3(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK5(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK4(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK6(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK5(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK7(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK6(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK8(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK7(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK9(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK8(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK10(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK9(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK11(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK10(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK12(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK11(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK13(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK12(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK14(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK13(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK15(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK14(args_in + 1, __VA_ARGS__)
+#define EXPAND_PARAM_PACK16(args_in, param_tuple, ...) __APPLY_ARG(args_in, param_tuple), EXPAND_PARAM_PACK15(args_in + 1, __VA_ARGS__)
+
+#define EXPAND_FIXED0_NO_COMMA(...)
+#define EXPAND_FIXED1_NO_COMMA(func, fixed, var) func(fixed, var)
+#define EXPAND_FIXED2_NO_COMMA(func, fixed, var, ...) func(fixed, var) EXPAND_FIXED1_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED3_NO_COMMA(func, fixed, var, ...) func(fixed, var) EXPAND_FIXED2_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED4_NO_COMMA(func, fixed, var, ...) func(fixed, var) EXPAND_FIXED3_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED5_NO_COMMA(func, fixed, var, ...) func(fixed, var) EXPAND_FIXED4_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED6_NO_COMMA(func, fixed, var, ...) func(fixed, var) EXPAND_FIXED5_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED7_NO_COMMA(func, fixed, var, ...) func(fixed, var) EXPAND_FIXED6_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED8_NO_COMMA(func, fixed, var, ...) func(fixed, var) EXPAND_FIXED7_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED9_NO_COMMA(func, fixed, var, ...) func(fixed, var) EXPAND_FIXED8_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED10_NO_COMMA(func, fixed, var, ...) func(var) EXPAND_FIXED9_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED11_NO_COMMA(func, fixed, var, ...) func(var) EXPAND_FIXED10_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED12_NO_COMMA(func, fixed, var, ...) func(var) EXPAND_FIXED11_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED13_NO_COMMA(func, fixed, var, ...) func(var) EXPAND_FIXED12_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED14_NO_COMMA(func, fixed, var, ...) func(var) EXPAND_FIXED13_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED15_NO_COMMA(func, fixed, var, ...) func(var) EXPAND_FIXED14_NO_COMMA(func, fixed, __VA_ARGS__)
+#define EXPAND_FIXED16_NO_COMMA(func, fixed, var, ...) func(var) EXPAND_FIXED15_NO_COMMA(func, fixed, __VA_ARGS__)
+
 #define EXPAND2_0(...)
 #define EXPAND2_1(func, var1, var2) func(var1, var2)
 #define EXPAND2_2(func, var1, var2, ...) func(var1, var2) EXPAND2_1(func, __VA_ARGS__)
@@ -103,6 +154,27 @@ for (auto collection##iter = GetIterator(&collection); HasNext(collection##iter)
 #define EXPAND2_FIXED14(func, fixed, var1, var2, ...) func(fixed, var1, var2), EXPAND2_FIXED13(func, fixed, __VA_ARGS__)
 #define EXPAND2_FIXED15(func, fixed, var1, var2, ...) func(fixed, var1, var2), EXPAND2_FIXED14(func, fixed, __VA_ARGS__)
 #define EXPAND2_FIXED16(func, fixed, var1, var2, ...) func(fixed, var1, var2), EXPAND2_FIXED15(func, fixed, __VA_ARGS__)
+
+#define UNPACK_PARAMS(args_in, ...)         \
+__SELECT(__VA_ARGS__ __VA_OPT__(,)          \
+EXPAND_PARAM_PACK16,                        \
+EXPAND_PARAM_PACK15,                        \
+EXPAND_PARAM_PACK14,                        \
+EXPAND_PARAM_PACK13,                        \
+EXPAND_PARAM_PACK12,                        \
+EXPAND_PARAM_PACK11,                        \
+EXPAND_PARAM_PACK10,                        \
+EXPAND_PARAM_PACK9,                         \
+EXPAND_PARAM_PACK8,                         \
+EXPAND_PARAM_PACK7,                         \
+EXPAND_PARAM_PACK6,                         \
+EXPAND_PARAM_PACK5,                         \
+EXPAND_PARAM_PACK4,                         \
+EXPAND_PARAM_PACK3,                         \
+EXPAND_PARAM_PACK2,                         \
+EXPAND_PARAM_PACK1,                         \
+EXPAND_PARAM_PACK0)                         \
+(args_in, __VA_ARGS__)
 
 #define EXPAND_ARGS(func, ...)      \
 __SELECT(__VA_ARGS__ __VA_OPT__(,)  \
@@ -144,6 +216,27 @@ EXPAND_FIXED3,                \
 EXPAND_FIXED2,                \
 EXPAND_FIXED1,                \
 EXPAND_FIXED0)                \
+(func, fixed, __VA_ARGS__)
+
+#define EXPAND_ARGS_FIXED_NO_COMMA(func, fixed, ...)        \
+__SELECT(__VA_ARGS__ __VA_OPT__(,)                 \
+EXPAND_FIXED16_NO_COMMA,               \
+EXPAND_FIXED16_NO_COMMA,               \
+EXPAND_FIXED16_NO_COMMA,               \
+EXPAND_FIXED16_NO_COMMA,               \
+EXPAND_FIXED16_NO_COMMA,               \
+EXPAND_FIXED16_NO_COMMA,               \
+EXPAND_FIXED16_NO_COMMA,               \
+EXPAND_FIXED9_NO_COMMA,                \
+EXPAND_FIXED8_NO_COMMA,                \
+EXPAND_FIXED7_NO_COMMA,                \
+EXPAND_FIXED6_NO_COMMA,                \
+EXPAND_FIXED5_NO_COMMA,                \
+EXPAND_FIXED4_NO_COMMA,                \
+EXPAND_FIXED3_NO_COMMA,                \
+EXPAND_FIXED2_NO_COMMA,                \
+EXPAND_FIXED1_NO_COMMA,                \
+EXPAND_FIXED0_NO_COMMA)                \
 (func, fixed, __VA_ARGS__)
 
 #define EXPAND_ARGS2(func, ...)                     \

@@ -132,6 +132,7 @@ VType RegisterNewVType(
     klass->instanceInit = typeInfo->instanceInit;
     klass->instanceFinalize = typeInfo->dtor;
     klass->fieldInfo = typeInfo->memberInfos;
+    klass->methodInfo = typeInfo->methodInfos;
     klass->classInit = typeInfo->classInit;
     klass->classFinalize = typeInfo->classFinalize;
 
@@ -151,6 +152,8 @@ static const char* GetBuiltinTypeName(const VType typeid)
 {
     switch (typeid)
     {
+        case V_TYPE_VOID:
+            return "void";
         case V_TYPE_CHAR:
             return "char";
         case V_TYPE_UCHAR:
