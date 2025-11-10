@@ -11,6 +11,8 @@ void VDisplayMethodSignature(const VMethodInfo* methodInfo)
     String_Append(&signature, " ");
     String_Append(&signature, methodInfo->methodName);
     String_AppendChar(&signature, '(');
+    String_Append(&signature, methodInfo->klass);
+    String_Append(&signature, "*, ");
     for (int i = 0; i < methodInfo->paramCount; i++)
     {
         String_Append(&signature, VGetTypeName(methodInfo->paramTypes[i]));

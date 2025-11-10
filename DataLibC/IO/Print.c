@@ -19,32 +19,32 @@ static int ExtractAndPrintFromVA(va_list* list, char* buffer, const int start, c
     if (IsConvertibleToInt(type))
     {
         const int v = va_arg(*list, int);
-        return snprintf(buffer + start, maxSize, "%d ", v);
+        return snprintf(buffer + start, maxSize, "%d", v);
     }
     if (IsConvertibleToDouble(type))
     {
         const double v = va_arg(*list, double);
-        return snprintf(buffer + start, maxSize, "%g ", v);
+        return snprintf(buffer + start, maxSize, "%g", v);
     }
     if (type == kUINT)
     {
         const unsigned int v = va_arg(*list, unsigned int);
-        return snprintf(buffer + start, maxSize, "%u ", v);
+        return snprintf(buffer + start, maxSize, "%u", v);
     }
     if (type == kSTRING)
     {
         const char* v = va_arg(*list, char*);
-        return snprintf(buffer + start, maxSize, "%s ", v);
+        return snprintf(buffer + start, maxSize, "%s", v);
     }
     if (type == kPOINTER)
     {
         const void* v = va_arg(*list, void*);
-        return snprintf(buffer + start, maxSize, "%p ", v);
+        return snprintf(buffer + start, maxSize, "%p", v);
     }
     if (type == kBOOL)
     {
         const bool v = va_arg(*list, int);
-        return snprintf(buffer + start, maxSize, "%s ", v ? "true" : "false");
+        return snprintf(buffer + start, maxSize, "%s", v ? "true" : "false");
     }
     return 0;
 }

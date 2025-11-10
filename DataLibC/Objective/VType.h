@@ -218,9 +218,10 @@ __GEN_VTYPE_PROPERTY(newType, __VA_ARGS__)
 #define __EXTRACT_TYPE_FROM_PARAM_TUPLE_LIST(param_tuple)  \
     APPLY_TUPLE_AGAIN(__GET_PARAM_TYPE, param_tuple)
 
-#define __BUILD_METHOD_INFO(name, ptr, ret, ...)                                \
+#define __BUILD_METHOD_INFO(name, vtype, ptr, ret, ...)                         \
 {                                                                               \
     .methodName = __GET_MEMBER_NAME(name),                                      \
+    .klass = #vtype,                                                            \
     .accessFlag = VAPublic | VAInstance,                                        \
     .method = ptr,                                                              \
     .returnType = __V_GET_RET_TYPE_FROM_POINTER((ret*){0}),                     \
@@ -245,7 +246,7 @@ static const struct _VTypeConstructorInfo type##_ctor_info = {  \
 #define __GET_TYPE_CONSTRUCTOR_INFO(type) type##_ctor_info
 
 #define __GEN_METHOD_INFO_STEP1(ret, name, param_list, vtype)  \
-    __BUILD_METHOD_INFO(name, __AUTO_GEN_METHOD(vtype, name), ret, STRIP(param_list))
+    __BUILD_METHOD_INFO(name, vtype, __AUTO_GEN_METHOD(vtype, name), ret, STRIP(param_list))
 
 #define __GEN_METHOD_INFO_HELPER(vtype, method_tuple)  \
     APPLY_TUPLE_EXT(__GEN_METHOD_INFO_STEP1, method_tuple, vtype)
@@ -258,26 +259,34 @@ static const struct _VTypeConstructorInfo type##_ctor_info = {  \
 #define __STRIP_PARAM_HELPER(param_pair) __STRIP_PARAM_IMPL param_pair
 
 
+#define __VOIDRET(vtype, ret, name, object, args_in, out, ...)\
+    __GEN_METHOD_CALL_WITH_NO_RETURN(vtype, name, object, args_in __VA_OPT__(, __VA_ARGS__))
+
+#define __NONVOID(vtype, ret, name, object, args_in, out, ...)\
+    __GEN_METHOD_CALL_NORMAL(vtype, ret, name, object, args_in, out __VA_OPT__(, __VA_ARGS__))
+
+#define __PROBE_void
+#define __CHECK_VOID(ret) __CHECK_VOID_IMPL(__PROBE_##ret)
+#define __CHECK_VOID_IMPL(...) __CHECK_VOID_ARGC(__VA_ARGS__ __VA_OPT__(,) __NONVOID, __VOIDRET)
+#define __CHECK_VOID_ARGC(_1, N, ...) N
+
 #define __AUTO_GEN_METHOD(vtype, name) __auto_generate_##vtype##_##name
 
-#define __GEN_METHOD_CALL_WITH_NO_RETURN(vtype, name, object, args_in, ...) \
-    vtype##_##name(object __VA_OPT__(,) UNPACK_PARAMS(args_in, __VA_ARGS__))
+#define __GEN_METHOD_CALL_WITH_NO_RETURN(vtype, name, object, args_in, ...)         \
+vtype##_##name(object __VA_OPT__(,) UNPACK_PARAMS(args_in, __VA_ARGS__));
 
-#define __GEN_METHOD_CALL_NORMAL(vtype, ret, name, object, args_in, out, ...)         nullptr
-// auto value = vtype##_##name(object __VA_OPT__(,) UNPACK_PARAMS(args_in, __VA_ARGS__));          \
-// memcpy_s(out, sizeof(ret), &value, sizeof(ret));
+#define __GEN_METHOD_CALL_NORMAL(vtype, ret, name, object, args_in, out, ...)                   \
+auto value = vtype##_##name(object __VA_OPT__(,) UNPACK_PARAMS(args_in, __VA_ARGS__));          \
+memcpy_s(out, sizeof(ret), &value, sizeof(ret));
 
-#define __GEN_METHOD_CALL_THROUGH_RET_TYPE(vtype, ret, name, object, args_in, out, ...)                         \
-    _Generic((ret*){0},                                                                                         \
-        void*: __GEN_METHOD_CALL_WITH_NO_RETURN(vtype, name, object, args_in __VA_OPT__(, __VA_ARGS__)),       \
-        default: __GEN_METHOD_CALL_NORMAL(vtype, ret, name, object, args_in, out __VA_OPT__(, __VA_ARGS__))     \
-    );
+#define __GEN_METHOD_CALL_THROUGH_RET_TYPE(vtype, ret, name, object, args_in, out, ...)          \
+        __CHECK_VOID(ret)(vtype, ret, name, object, args_in, out __VA_OPT__(, __VA_ARGS__))
+
 
 #define __FOREACH_DECLARE_METHOD_STEP2(vtype, ret, name, ...)   \
     ret vtype##_##name(vtype* self __VA_OPT__(,) EXPAND_ARGS(__STRIP_PARAM_HELPER, __VA_ARGS__));               \
     static void __AUTO_GEN_METHOD(vtype, name)(void* object, void** args, void* out)                            \
     {                                                                                                           \
-         constexpr int argCount = COUNT_ARG(__VA_ARGS__);                                                       \
          __GEN_METHOD_CALL_THROUGH_RET_TYPE(vtype, ret, name, object, args, out __VA_OPT__(, __VA_ARGS__))        \
     }
 
@@ -415,6 +424,7 @@ __DEFINE_VTYPE_REGISTER(newType, parentType, destructor)
 
 
 API_MODULE VType
+
 RegisterNewVType(
     VType (* parentTypeGetType)(), const char* typeName, const VTypeInfo* typeInfo, VTypeFlag typeFlag);
 
@@ -450,6 +460,7 @@ typedef enum VAccessFlag
 typedef struct _VMethodInfo
 {
     const char* methodName;
+    const char* klass;
     VAccessFlag accessFlag;
     void* method;
     VType returnType;
