@@ -19,7 +19,11 @@ file(GLOB_RECURSE DATALIBC_SOURCES
         ${PROJECT_SOURCE_DIR}/DataLibC/**/*.h
 )
 
-add_library(${PROJECT_NAME} ${DATALIBC_SOURCES})
+add_library(${PROJECT_NAME} ${DATALIBC_SOURCES}
+        DataLibC/Physics/Backend/PhysicsCore.c
+        DataLibC/Physics/Backend/PhysicsCore.h
+        DataLibC/Physics/Rigidbody/RigidbodyType.h
+        DataLibC/Physics/Physics.h)
 
 
 target_include_directories(${PROJECT_NAME} PUBLIC

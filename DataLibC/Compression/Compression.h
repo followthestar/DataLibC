@@ -6,10 +6,8 @@
 #define DATALIBC_COMPRESSION_H
 
 #include <stddef.h>
+#include "DataLibC/Tool/TypeMacro.h"
 
-typedef unsigned char Byte;
-typedef unsigned short UInt16;
-typedef unsigned UInt32;
 
 typedef enum BitDirection
 {
