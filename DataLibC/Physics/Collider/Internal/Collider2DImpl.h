@@ -10,10 +10,10 @@
 
 typedef struct Collider2DImpl
 {
-    const struct Collider2D_VTable* vtable;
+    const Collider2D_VTable* vtable;
 
-    Vector2 m_LocalPosition;
-    float m_LocalRotation;
+    Vector2* positionHandle;
+    float* rotationHandle;
 
     bool isTrigger;
 } Collider2DImpl;

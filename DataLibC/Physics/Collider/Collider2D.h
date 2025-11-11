@@ -21,10 +21,7 @@ typedef enum Collider2DType
 } Collider2DType;
 
 
-typedef struct Collider2D_VTable
-{
-
-} Collider2D_VTable;
+typedef struct Collider2D_VTable { } Collider2D_VTable;
 
 
 struct Collider2D
@@ -41,16 +38,16 @@ struct Collider2D
 /// \return A pointer to the new Collider2D object. It is polymorphic, so you can cast it to the specific type you just created.
 /// \warning All handles in the object should have the same or longer lifetime as the Collider2D object.
 API_MODULE Collider2D*
-CreateCollider2D(Collider2DType type, Vector2* positionHandle, float* rotationHandle, bool isTrigger);
+Collider2D_Create(Collider2DType type, Vector2* positionHandle, float* rotationHandle, bool isTrigger);
 
 /// Set the trigger state of the collider.
 /// \param collider2D The collider to set.
 /// \param isTrigger
-API_MODULE void SetCollider2DIsTrigger(Collider2D* collider2D, bool isTrigger);
+API_MODULE void Collider2D_SetTrigger(Collider2D* collider2D, bool isTrigger);
 
 /// Is the collider a trigger?
 /// \param collider2D The collider to check.
 /// \return True if it is a trigger, false otherwise.
-API_MODULE bool GetCollider2DIsTrigger(Collider2D* collider2D);
+API_MODULE bool Collider2D_IsTrigger(Collider2D* collider2D);
 
 #endif //DATALIBC_COLLIDER2D_H
